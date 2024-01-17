@@ -11,7 +11,6 @@ from uuid import NAMESPACE_DNS, uuid1, uuid3, uuid5
 from typing_extensions import Literal, get_args, get_origin
 
 from polyfactory.collection_extender import CollectionExtender
-from polyfactory.constants import DEFAULT_RANDOM
 from polyfactory.exceptions import MissingDependencyException
 from polyfactory.factories.base import BaseFactory
 from polyfactory.field_meta import Constraints, FieldMeta, Null
@@ -80,7 +79,7 @@ class PydanticFieldMeta(FieldMeta):
         field_name: str,
         field_info: FieldInfo,
         use_alias: bool,
-        random: Random | None,
+        random: Random | None = None,
         randomize_collection_length: bool | None = None,
         min_collection_length: int | None = None,
         max_collection_length: int | None = None,
@@ -100,6 +99,7 @@ class PydanticFieldMeta(FieldMeta):
         check_for_deprecated_parameters(
             "2.11.0",
             parameters=(
+                ("random", random),
                 ("randomize_collection_length", randomize_collection_length),
                 ("min_collection_length", min_collection_length),
                 ("max_collection_length", max_collection_length),
@@ -127,7 +127,6 @@ class PydanticFieldMeta(FieldMeta):
                 cls.from_field_info(
                     field_info=FieldInfo.from_annotation(arg),
                     field_name=field_name,
-                    random=random,
                     use_alias=use_alias,
                 )
                 for arg in get_args(annotation)
@@ -156,7 +155,6 @@ class PydanticFieldMeta(FieldMeta):
             constraints=cast("Constraints", {k: v for k, v in constraints.items() if v is not None}) or None,
             default=default_value,
             name=name,
-            random=random or DEFAULT_RANDOM,
         )
 
     @classmethod
@@ -167,7 +165,7 @@ class PydanticFieldMeta(FieldMeta):
         randomize_collection_length: bool | None = None,
         min_collection_length: int | None = None,
         max_collection_length: int | None = None,
-        random: Random = DEFAULT_RANDOM,
+        random: Random | None = None,
     ) -> PydanticFieldMeta:
         """Create an instance from a pydantic model field.
         :param model_field: A pydantic ModelField.
@@ -183,6 +181,7 @@ class PydanticFieldMeta(FieldMeta):
         check_for_deprecated_parameters(
             "2.11.0",
             parameters=(
+                ("random", random),
                 ("randomize_collection_length", randomize_collection_length),
                 ("min_collection_length", min_collection_length),
                 ("max_collection_length", max_collection_length),
@@ -274,14 +273,12 @@ class PydanticFieldMeta(FieldMeta):
                 PydanticFieldMeta.from_model_field(
                     model_field=type_arg_to_sub_field[arg],
                     use_alias=use_alias,
-                    random=random,
                 )
                 for arg in extended_type_args
             )
 
         return PydanticFieldMeta(
             name=name,
-            random=random or DEFAULT_RANDOM,
             annotation=annotation,
             children=children or None,
             default=default_value,
@@ -342,7 +339,6 @@ class ModelFactory(Generic[T], BaseFactory[T]):
                     PydanticFieldMeta.from_model_field(
                         field,
                         use_alias=not cls.__model__.__config__.allow_population_by_field_name,  # type: ignore[attr-defined]
-                        random=cls.__random__,
                     )
                     for field in cls.__model__.__fields__.values()  # type: ignore[attr-defined]
                 ]
@@ -351,7 +347,6 @@ class ModelFactory(Generic[T], BaseFactory[T]):
                     PydanticFieldMeta.from_field_info(
                         field_info=field_info,
                         field_name=field_name,
-                        random=cls.__random__,
                         use_alias=not cls.__model__.model_config.get("populate_by_name", False),
                     )
                     for field_name, field_info in cls.__model__.model_fields.items()

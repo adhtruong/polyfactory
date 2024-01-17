@@ -99,16 +99,13 @@ class FieldMeta:
 
         :returns: a tuple of types.
         """
-        return tuple(
-            TYPE_MAPPING[arg] if arg in TYPE_MAPPING else arg
-            for arg in unwrap_args(self.annotation, random=self.random)
-        )
+        return tuple(TYPE_MAPPING[arg] if arg in TYPE_MAPPING else arg for arg in unwrap_args(self.annotation))
 
     @classmethod
     def from_type(
         cls,
         annotation: Any,
-        random: Random = DEFAULT_RANDOM,
+        random: Random | None = None,
         name: str = "",
         default: Any = Null,
         constraints: Constraints | None = None,
@@ -131,14 +128,15 @@ class FieldMeta:
         :returns: A field meta instance.
         """
         check_for_deprecated_parameters(
-            "2.11.0",
+            "2.14.0",
             parameters=(
                 ("randomize_collection_length", randomize_collection_length),
                 ("min_collection_length", min_collection_length),
                 ("max_collection_length", max_collection_length),
+                ("random", random),
             ),
         )
-        field_type = normalize_annotation(annotation, random=random)
+        field_type = normalize_annotation(annotation)
 
         if not constraints and is_annotated(annotation):
             metadata = cls.get_constraints_metadata(annotation)
@@ -152,7 +150,6 @@ class FieldMeta:
 
         field = cls(
             annotation=annotation,
-            random=random,
             name=name,
             default=default,
             children=children,
@@ -165,7 +162,6 @@ class FieldMeta:
             field.children = [
                 cls.from_type(
                     annotation=unwrap_new_type(arg),
-                    random=random,
                 )
                 for arg in extended_type_args
             ]
@@ -177,7 +173,7 @@ class FieldMeta:
 
         for value in metadata:
             if is_annotated(value):
-                _, inner_metadata = unwrap_annotated(value, random=DEFAULT_RANDOM)
+                _, inner_metadata = unwrap_annotated(value)
                 constraints.update(cast("dict[str, Any]", cls.parse_constraints(metadata=inner_metadata)))
             elif func := getattr(value, "func", None):
                 if func is str.islower:
