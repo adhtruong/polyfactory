@@ -68,7 +68,7 @@ class FieldMeta:
     __slots__ = ("name", "annotation", "random", "children", "default", "constraints")
 
     annotation: Any
-    random: Random
+    random: Random | None
     children: list[FieldMeta] | None
     default: Any
     name: str
@@ -86,7 +86,7 @@ class FieldMeta:
     ) -> None:
         """Create a factory field metadata instance."""
         self.annotation = annotation
-        self.random = random or DEFAULT_RANDOM
+        self.random = random
         self.children = children
         self.default = default
         self.name = name
@@ -104,7 +104,7 @@ class FieldMeta:
     def from_type(
         cls,
         annotation: Any,
-        random: Random = DEFAULT_RANDOM,
+        random: Random | None = None,
         name: str = "",
         default: Any = Null,
         constraints: Constraints | None = None,
@@ -132,6 +132,7 @@ class FieldMeta:
                 ("randomize_collection_length", randomize_collection_length),
                 ("min_collection_length", min_collection_length),
                 ("max_collection_length", max_collection_length),
+                ("random", random),
             ),
         )
 
@@ -159,12 +160,7 @@ class FieldMeta:
             number_of_args = 1
             extended_type_args = CollectionExtender.extend_type_args(field.annotation, field.type_args, number_of_args)
             field.children = [
-                cls.from_type(
-                    annotation=unwrap_new_type(arg),
-                    random=random,
-                )
-                for arg in extended_type_args
-                if arg is not NoneType
+                cls.from_type(annotation=unwrap_new_type(arg)) for arg in extended_type_args if arg is not NoneType
             ]
         return field
 

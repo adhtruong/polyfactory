@@ -148,7 +148,6 @@ class SQLAlchemyFactory(Generic[T], BaseFactory[T]):
             FieldMeta.from_type(
                 annotation=cls.get_type_from_column(column),
                 name=name,
-                random=cls.__random__,
             )
             for name, column in table.columns.items()
             if cls.should_column_be_set(column)
@@ -161,7 +160,6 @@ class SQLAlchemyFactory(Generic[T], BaseFactory[T]):
                     FieldMeta.from_type(
                         name=name,
                         annotation=annotation,
-                        random=cls.__random__,
                     ),
                 )
 
